@@ -1,0 +1,18 @@
+# Android Studio
+*.iml
+.idea/
+.gradle/
+build/
+
+# Local properties
+local.properties
+
+# Keystore files
+*.jks
+*.keystore
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
