@@ -3,6 +3,7 @@ package com.jv.loyaltycardswallet
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import android.view.View
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
@@ -11,6 +12,8 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.zxing.BarcodeFormat
+import com.journeyapps.barcodescanner.BarcodeEncoder
 import com.jv.loyaltycardswallet.databinding.ActivityMainBinding
 import com.jv.loyaltycardswallet.databinding.DialogAddCardBinding
 
@@ -59,14 +62,12 @@ class MainActivity : AppCompatActivity() {
             .setPositiveButton("Add") { dialog, _ ->
                 val name = dialogBinding.editTextName.text.toString().trim()
                 val cardNumber = dialogBinding.editTextCardNumber.text.toString().trim()
-                val notes = dialogBinding.editTextNotes.text.toString().trim()
 
                 if (name.isNotEmpty() && cardNumber.isNotEmpty()) {
                     val card = Card(
                         name = name,
                         cardNumber = cardNumber,
-                        barcodeType = "CODE128",
-                        notes = notes
+                        barcodeType = "CODE128"
                     )
                     cardViewModel.insert(card)
                     dialog.dismiss()
@@ -82,7 +83,16 @@ class MainActivity : AppCompatActivity() {
         val dialogBinding = DialogAddCardBinding.inflate(LayoutInflater.from(this))
         dialogBinding.editTextName.setText(card.name)
         dialogBinding.editTextCardNumber.setText(card.cardNumber)
-        dialogBinding.editTextNotes.setText(card.notes)
+
+        // Generate and show barcode
+        try {
+            val barcodeEncoder = BarcodeEncoder()
+            val bitmap = barcodeEncoder.encodeBitmap(card.cardNumber, BarcodeFormat.CODE_128, 600, 200)
+            dialogBinding.imageViewBarcode.setImageBitmap(bitmap)
+            dialogBinding.imageViewBarcode.visibility = View.VISIBLE
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
 
         MaterialAlertDialogBuilder(this)
             .setTitle("Edit Card")
@@ -90,13 +100,11 @@ class MainActivity : AppCompatActivity() {
             .setPositiveButton("Save") { dialog, _ ->
                 val name = dialogBinding.editTextName.text.toString().trim()
                 val cardNumber = dialogBinding.editTextCardNumber.text.toString().trim()
-                val notes = dialogBinding.editTextNotes.text.toString().trim()
 
                 if (name.isNotEmpty() && cardNumber.isNotEmpty()) {
                     val updatedCard = card.copy(
                         name = name,
-                        cardNumber = cardNumber,
-                        notes = notes
+                        cardNumber = cardNumber
                     )
                     cardViewModel.update(updatedCard)
                     dialog.dismiss()

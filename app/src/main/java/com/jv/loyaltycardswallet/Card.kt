@@ -8,6 +8,5 @@ data class Card(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val name: String,
     val cardNumber: String,
-    val barcodeType: String = "CODE128",
-    val notes: String = ""
+    val barcodeType: String = "CODE128"
 )

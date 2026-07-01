@@ -34,18 +34,12 @@
 
     </com.google.android.material.textfield.TextInputLayout>
 
-    <com.google.android.material.textfield.TextInputLayout
+    <ImageView
+        android:id="@+id/imageViewBarcode"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Notes (optional)">
-
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/editTextNotes"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:inputType="textMultiLine"
-            android:minLines="2" />
-
-    </com.google.android.material.textfield.TextInputLayout>
+        android:layout_height="120dp"
+        android:layout_marginTop="16dp"
+        android:scaleType="fitCenter"
+        android:visibility="gone" />
 
 </LinearLayout>

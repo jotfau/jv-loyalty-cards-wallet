@@ -29,12 +29,6 @@ class CardAdapter(private val onClick: (Card) -> Unit) :
         fun bind(card: Card) {
             binding.textViewName.text = card.name
             binding.textViewCardNumber.text = card.cardNumber
-            if (card.notes.isNotEmpty()) {
-                binding.textViewNotes.text = card.notes
-                binding.textViewNotes.visibility = ViewGroup.VISIBLE
-            } else {
-                binding.textViewNotes.visibility = ViewGroup.GONE
-            }
         }
     }
 
