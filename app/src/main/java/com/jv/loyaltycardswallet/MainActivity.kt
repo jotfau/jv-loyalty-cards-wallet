@@ -14,6 +14,8 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.zxing.BarcodeFormat
 import com.journeyapps.barcodescanner.BarcodeEncoder
+import com.journeyapps.barcodescanner.ScanContract
+import com.journeyapps.barcodescanner.ScanOptions
 import com.jv.loyaltycardswallet.databinding.ActivityMainBinding
 import com.jv.loyaltycardswallet.databinding.DialogAddCardBinding
 
@@ -21,6 +23,22 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var cardViewModel: CardViewModel
     private lateinit var adapter: CardAdapter
+    private var currentDialogBinding: DialogAddCardBinding? = null
+
+    private val barcodeLauncher = registerForActivityResult(ScanContract()) { result ->
+        val scannedValue = result.contents
+        if (scannedValue != null) {
+            currentDialogBinding?.let { binding ->
+                binding.editTextCardNumber.setText(scannedValue)
+                // Also trigger barcode update if visible
+                if (binding.imageViewBarcode.visibility == View.VISIBLE) {
+                    updateBarcodePreview(scannedValue, binding)
+                }
+            } ?: run {
+                Toast.makeText(this, "Scan result: $scannedValue", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -56,6 +74,18 @@ class MainActivity : AppCompatActivity() {
 
     private fun showAddCardDialog() {
         val dialogBinding = DialogAddCardBinding.inflate(LayoutInflater.from(this))
+        currentDialogBinding = dialogBinding
+
+        dialogBinding.textInputLayoutCardNumber.setEndIconOnClickListener {
+            val options = ScanOptions()
+            options.setDesiredBarcodeFormats(ScanOptions.ALL_CODE_TYPES)
+            options.setPrompt("Scan a card")
+            options.setBeepEnabled(true)
+            options.setOrientationLocked(true)
+            options.setCaptureActivity(CaptureActivityPortrait::class.java)
+            barcodeLauncher.launch(options)
+        }
+
         MaterialAlertDialogBuilder(this)
             .setTitle("Add New Card")
             .setView(dialogBinding.root)
@@ -76,23 +106,29 @@ class MainActivity : AppCompatActivity() {
                 }
             }
             .setNegativeButton("Cancel") { dialog, _ -> dialog.dismiss() }
+            .setOnDismissListener { currentDialogBinding = null }
             .show()
     }
 
     private fun onCardClick(card: Card) {
         val dialogBinding = DialogAddCardBinding.inflate(LayoutInflater.from(this))
+        currentDialogBinding = dialogBinding
+
         dialogBinding.editTextName.setText(card.name)
         dialogBinding.editTextCardNumber.setText(card.cardNumber)
 
-        // Generate and show barcode
-        try {
-            val barcodeEncoder = BarcodeEncoder()
-            val bitmap = barcodeEncoder.encodeBitmap(card.cardNumber, BarcodeFormat.CODE_128, 600, 200)
-            dialogBinding.imageViewBarcode.setImageBitmap(bitmap)
-            dialogBinding.imageViewBarcode.visibility = View.VISIBLE
-        } catch (e: Exception) {
-            e.printStackTrace()
+        dialogBinding.textInputLayoutCardNumber.setEndIconOnClickListener {
+            val options = ScanOptions()
+            options.setDesiredBarcodeFormats(ScanOptions.ALL_CODE_TYPES)
+            options.setPrompt("Scan a card")
+            options.setBeepEnabled(true)
+            options.setOrientationLocked(true)
+            options.setCaptureActivity(CaptureActivityPortrait::class.java)
+            barcodeLauncher.launch(options)
         }
+
+        // Generate and show barcode
+        updateBarcodePreview(card.cardNumber, dialogBinding)
 
         MaterialAlertDialogBuilder(this)
             .setTitle("Edit Card")
@@ -117,6 +153,23 @@ class MainActivity : AppCompatActivity() {
                 cardViewModel.delete(card)
                 dialog.dismiss()
             }
+            .setOnDismissListener { currentDialogBinding = null }
             .show()
+    }
+
+    private fun updateBarcodePreview(cardNumber: String, binding: DialogAddCardBinding) {
+        if (cardNumber.isEmpty()) {
+            binding.imageViewBarcode.visibility = View.GONE
+            return
+        }
+        try {
+            val barcodeEncoder = BarcodeEncoder()
+            val bitmap = barcodeEncoder.encodeBitmap(cardNumber, BarcodeFormat.CODE_128, 600, 200)
+            binding.imageViewBarcode.setImageBitmap(bitmap)
+            binding.imageViewBarcode.visibility = View.VISIBLE
+        } catch (e: Exception) {
+            e.printStackTrace()
+            binding.imageViewBarcode.visibility = View.GONE
+        }
     }
 }
