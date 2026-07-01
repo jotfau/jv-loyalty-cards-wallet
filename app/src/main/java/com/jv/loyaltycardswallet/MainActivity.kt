@@ -1,23 +1,37 @@
 package com.jv.loyaltycardswallet
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.text.InputType
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.view.View
+import android.widget.EditText
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import com.google.zxing.BarcodeFormat
 import com.journeyapps.barcodescanner.BarcodeEncoder
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
 import com.jv.loyaltycardswallet.databinding.ActivityMainBinding
 import com.jv.loyaltycardswallet.databinding.DialogAddCardBinding
+import java.io.BufferedReader
+import java.io.BufferedWriter
+import java.io.InputStreamReader
+import java.io.OutputStreamWriter
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
@@ -38,6 +52,14 @@ class MainActivity : AppCompatActivity() {
                 Toast.makeText(this, "Scan result: $scannedValue", Toast.LENGTH_LONG).show()
             }
         }
+    }
+
+    private val importLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        uri?.let { importCards(it) }
+    }
+
+    private val backupLauncher = registerForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+        uri?.let { saveBackup(it) }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -64,6 +86,9 @@ class MainActivity : AppCompatActivity() {
 
         // Setup FAB
         binding.fab.setOnClickListener { showAddCardDialog() }
+
+        binding.buttonBackup.setOnClickListener { backupCards() }
+        binding.buttonImport.setOnClickListener { importLauncher.launch("application/json") }
 
         ViewCompat.setOnApplyWindowInsetsListener(binding.main) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
@@ -170,6 +195,57 @@ class MainActivity : AppCompatActivity() {
         } catch (e: Exception) {
             e.printStackTrace()
             binding.imageViewBarcode.visibility = View.GONE
+        }
+    }
+
+    private fun backupCards() {
+        val cards = cardViewModel.allCards.value ?: emptyList()
+        if (cards.isEmpty()) {
+            Toast.makeText(this, "No cards to backup", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+        val fileName = "loyalty_cards_backup_$timeStamp.json"
+        
+        backupLauncher.launch(fileName)
+    }
+
+    private fun saveBackup(uri: Uri) {
+        val cards = cardViewModel.allCards.value ?: emptyList()
+        val json = Gson().toJson(cards)
+        
+        try {
+            contentResolver.openOutputStream(uri)?.use { outputStream ->
+                val writer = BufferedWriter(OutputStreamWriter(outputStream))
+                writer.write(json)
+                writer.flush()
+                Toast.makeText(this, "Backup saved successfully", Toast.LENGTH_SHORT).show()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Toast.makeText(this, "Failed to save backup: ${e.message}", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun importCards(uri: Uri) {
+        try {
+            contentResolver.openInputStream(uri)?.use { inputStream ->
+                val reader = BufferedReader(InputStreamReader(inputStream))
+                val json = reader.readText()
+                val type = object : TypeToken<List<Card>>() {}.type
+                val cards: List<Card> = Gson().fromJson(json, type)
+
+                cards.forEach { card ->
+                    // Reset ID to 0 for Room to autogenerate new IDs
+                    val newCard = card.copy(id = 0)
+                    cardViewModel.insert(newCard)
+                }
+                Toast.makeText(this, "Imported ${cards.size} cards", Toast.LENGTH_SHORT).show()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Toast.makeText(this, "Import failed: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
 }

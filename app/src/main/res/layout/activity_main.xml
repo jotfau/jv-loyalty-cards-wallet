@@ -14,15 +14,43 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:clipToPadding="false"
-        android:paddingBottom="72dp"
+        android:paddingBottom="120dp"
         app:layout_behavior="@string/appbar_scrolling_view_behavior" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:background="@android:color/white"
+        android:elevation="8dp"
+        android:orientation="horizontal"
+        android:padding="8dp">
+
+        <Button
+            android:id="@+id/buttonBackup"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Backup" />
+
+        <Button
+            android:id="@+id/buttonImport"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Import" />
+
+    </LinearLayout>
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fab"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
-        android:layout_margin="16dp"
+        android:layout_marginBottom="72dp"
+        android:layout_marginEnd="16dp"
         android:contentDescription="Add card"
         android:src="@drawable/ic_add"
         app:tint="@android:color/white" />
